@@ -111,7 +111,10 @@ class ImageUpscaler:
             logger.info(f"Upscaling: {input_path} -> {output_path}")
             
             # 이미지 로드
-            img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
+            input_path = _clean_path(input_path)
+            output_path = _clean_path(output_path)
+
+            img = imread_unicode(input_path, cv2.IMREAD_UNCHANGED)
             if img is None:
                 raise ValueError(f"Failed to load image: {input_path}")
             
@@ -132,17 +135,16 @@ class ImageUpscaler:
             ext = Path(output_path).suffix.lower()
             
             if ext in ['.jpg', '.jpeg']:
-                # JPEG 저장
-                cv2.imwrite(output_path, output, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_JPEG_QUALITY, 95])
             elif ext == '.png':
-                # PNG 저장
-                cv2.imwrite(output_path, output, [cv2.IMWRITE_PNG_COMPRESSION, 6])
+                ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_PNG_COMPRESSION, 6])
             elif ext == '.webp':
-                # WEBP 저장
-                cv2.imwrite(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, 90])
+                ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, 90])
             else:
-                # 기본 저장
-                cv2.imwrite(output_path, output)
+                ok = imwrite_unicode(output_path, output)
+
+            if not ok:
+                raise ValueError(f"Failed to save image: {output_path}")
             
             if progress_callback:
                 progress_callback(100)
@@ -185,7 +187,10 @@ class ImageUpscaler:
             logger.info(f"Upscaling with quality: {input_path}")
             
             # 이미지 로드
-            img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
+            input_path = _clean_path(input_path)
+            output_path = _clean_path(output_path)
+
+            img = imread_unicode(input_path, cv2.IMREAD_UNCHANGED)
             if img is None:
                 raise ValueError(f"Failed to load image: {input_path}")
             
@@ -202,17 +207,20 @@ class ImageUpscaler:
             ext = Path(output_path).suffix.lower()
             
             if ext in ['.jpg', '.jpeg']:
-                cv2.imwrite(output_path, output, [cv2.IMWRITE_JPEG_QUALITY, jpg_quality])
+                ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_JPEG_QUALITY, jpg_quality])
             elif ext == '.png':
-                cv2.imwrite(output_path, output, [cv2.IMWRITE_PNG_COMPRESSION, png_compression])
+                ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_PNG_COMPRESSION, png_compression])
             elif ext == '.webp':
                 if webp_lossless:
-                    cv2.imwrite(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, 101])
+                    ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, 101])
                 else:
-                    cv2.imwrite(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, webp_quality])
+                    ok = imwrite_unicode(output_path, output, [cv2.IMWRITE_WEBP_QUALITY, webp_quality])
             else:
-                cv2.imwrite(output_path, output)
-            
+                ok = imwrite_unicode(output_path, output)
+
+            if not ok:
+                raise ValueError(f"Failed to save image: {output_path}")
+
             if progress_callback:
                 progress_callback(100)
             
