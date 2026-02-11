@@ -179,7 +179,7 @@ class Worker(QThread):
         
         def progress_callback(progress):
             # 취소 확인
-            if task.status == TaskStatus.CANCELLED:
+            if self._stop_requested or task.status == TaskStatus.CANCELLED:
                 raise InterruptedError("Task cancelled")
             
             self.task_queue.update_task(
