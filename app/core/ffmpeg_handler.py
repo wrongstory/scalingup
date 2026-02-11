@@ -146,6 +146,7 @@ class FFmpegHandler:
             
             cmd = [
                 self.ffmpeg_path, "-y",
+                "-threads", "0",
                 "-ss", str(start_time),
             ]
             
@@ -239,6 +240,7 @@ class FFmpegHandler:
                 "-c:v", codec_name,
                 "-crf", str(crf),
                 "-pix_fmt", "yuv420p",
+                "-threads", "0",      # 모든 cpu 코어 사용
             ]
             
             # 오디오 추가
