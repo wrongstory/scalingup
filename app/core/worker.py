@@ -79,6 +79,9 @@ class Worker(QThread):
         self.all_tasks_completed.emit()
     
     def _process_task(self, task: UpscaleTask):
+        """현재 작업 id 저장"""
+        self.current_task_id = task.task_id
+
         """작업 처리."""
         logger.info(f"Processing task: {task.task_id}")
         
@@ -133,6 +136,9 @@ class Worker(QThread):
                 error=str(e)
             )
             self.task_failed.emit(task.task_id, str(e))
+
+        finally:
+            self.current_task_id = None
     
     def _load_model(self, model_name: str) -> bool:
         """AI 모델 로드."""
@@ -240,4 +246,12 @@ class Worker(QThread):
     def stop(self):
         """워커 중지."""
         self._stop_requested = True
+
+        # 현재 작업도 취소 상태로 변경 (progress_callback 에서 즉시 감지)
+        if getattr(self, "current_task_id", None):
+            self.task_queue.update_task(
+                self.current_task_id,
+                status=TaskStatus.CANCELLED,
+                message="사용자에 의해 중지됨"
+            )
         logger.info("Worker stop requested")
