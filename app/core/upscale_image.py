@@ -58,6 +58,9 @@ class ImageUpscaler:
     
     def _init_model(self):
         """Real-ESRGAN 모델 초기화."""
+        if self.device == "cpu" and self.tile_size > 256:
+            self.tile_size = 256
+            
         try:
             from basicsr.archs.rrdbnet_arch import RRDBNet
             from realesrgan import RealESRGANer

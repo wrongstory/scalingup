@@ -142,10 +142,11 @@ class FFmpegHandler:
             video_path = _clean_path(video_path)
             output_dir = _clean_path(output_dir)
             Path(output_dir).mkdir(parents=True, exist_ok=True)
-            out_pattern = str(Path(output_dir) / "frame_%06d.png")
+            out_pattern = str(Path(output_dir) / "frame_%06d.jpg")
             
             cmd = [
                 self.ffmpeg_path, "-y",
+                "-threads", "0",
                 "-ss", str(start_time),
             ]
             
@@ -154,7 +155,7 @@ class FFmpegHandler:
             
             cmd.extend([
                 "-i", video_path,
-                "-qscale:v", "1",
+                "-q:v", "3",
                 out_pattern
             ])
 
@@ -229,7 +230,7 @@ class FFmpegHandler:
 
             # 코덱 설정
             codec_name = "libx264" if codec == "h264" else "libx265"
-            in_pattern = str(Path(frames_dir) / "frame_%06d.png")
+            in_pattern = str(Path(frames_dir) / "frame_%06d.jpg")
             
             cmd = [
                 self.ffmpeg_path,
@@ -239,6 +240,7 @@ class FFmpegHandler:
                 "-c:v", codec_name,
                 "-crf", str(crf),
                 "-pix_fmt", "yuv420p",
+                "-threads", "0",      # 모든 cpu 코어 사용
             ]
             
             # 오디오 추가
@@ -266,7 +268,7 @@ class FFmpegHandler:
             )
             
             # 진행률 파싱
-            frame_files = list(Path(frames_dir).glob("frame_*.png"))
+            frame_files = list(Path(frames_dir).glob("frame_*.jpg"))
             total_frames = len(frame_files)
             
             assert process.stderr is not None
