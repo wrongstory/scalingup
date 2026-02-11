@@ -9,6 +9,9 @@ from typing import Optional, Callable, Dict
 
 logger = logging.getLogger(__name__)
 
+def _clean_path(p: str) -> str:
+    return str(p).strip().replace("\n", "").replace("\r", "")
+
 
 class FFmpegHandler:
     """FFmpeg 래퍼 클래스."""
@@ -69,6 +72,7 @@ class FFmpegHandler:
             return None
         
         try:
+            video_path = _clean_path(video_path)
             cmd = [
                 self.ffprobe_path,
                 "-v", "quiet",
@@ -78,7 +82,7 @@ class FFmpegHandler:
                 video_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
             
             if result.returncode == 0:
                 import json
@@ -135,10 +139,13 @@ class FFmpegHandler:
             return False
         
         try:
+            video_path = _clean_path(video_path)
+            output_dir = _clean_path(output_dir)
             Path(output_dir).mkdir(parents=True, exist_ok=True)
+            out_pattern = str(Path(output_dir) / "frame_%06d.png")
             
             cmd = [
-                self.ffmpeg_path,
+                self.ffmpeg_path, "-y",
                 "-ss", str(start_time),
             ]
             
@@ -148,31 +155,38 @@ class FFmpegHandler:
             cmd.extend([
                 "-i", video_path,
                 "-qscale:v", "1",
-                os.path.join(output_dir, "frame_%06d.png")
+                out_pattern
             ])
+
+            # 콜백 없으면 데드락 방지
+            if not progress_callback:
+                result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return result.returncode == 0
             
             process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
                 universal_newlines=True
             )
-            
+
             # 진행률 파싱
-            if progress_callback:
-                video_info = self.get_video_info(video_path)
-                total_duration = duration or video_info.get('duration', 0) if video_info else 0
+            video_info = self.get_video_info(video_path)
+            total_duration = duration or video_info.get('duration', 0) if video_info else 0
                 
-                for line in process.stderr:
-                    time_match = re.search(r'time=(\d+):(\d+):(\d+\.\d+)', line)
-                    if time_match and total_duration > 0:
-                        h, m, s = map(float, time_match.groups())
-                        current_time = h * 3600 + m * 60 + s
-                        progress = min(100, (current_time / total_duration) * 100)
-                        progress_callback(progress)
+            assert process.stderr is not None
+            for line in process.stderr:
+                time_match = re.search(r'time=(\d+):(\d+):(\d+\.\d+)', line)
+                if time_match and total_duration > 0:
+                    h, m, s = map(float, time_match.groups())
+                    current_time = h * 3600 + m * 60 + s
+                    progress = min(100, (current_time / total_duration) * 100)
+                    progress_callback(progress)
             
             process.wait()
-            
             return process.returncode == 0
             
         except Exception as e:
@@ -209,13 +223,19 @@ class FFmpegHandler:
             return False
         
         try:
+            frames_dir = _clean_path(frames_dir)
+            output_path = _clean_path(output_path)
+            audio_path = _clean_path(audio_path) if audio_path else None
+
             # 코덱 설정
             codec_name = "libx264" if codec == "h264" else "libx265"
+            in_pattern = str(Path(frames_dir) / "frame_%06d.png")
             
             cmd = [
                 self.ffmpeg_path,
+                "-y",
                 "-framerate", str(fps),
-                "-i", os.path.join(frames_dir, "frame_%06d.png"),
+                "-i", in_pattern,
                 "-c:v", codec_name,
                 "-crf", str(crf),
                 "-pix_fmt", "yuv420p",
@@ -229,31 +249,33 @@ class FFmpegHandler:
                     "-b:a", "192k",
                     "-shortest"
                 ])
+
+            cmd.append(output_path)
             
-            cmd.extend([
-                "-y",
-                output_path
-            ])
+            if not progress_callback:
+                result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return result.returncode == 0
             
             process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
-                universal_newlines=True
+                text=True,
+                encoding="utf-8",
+                errors="replace",
             )
             
             # 진행률 파싱
-            if progress_callback:
-                # 프레임 수 계산
-                frame_files = list(Path(frames_dir).glob("frame_*.png"))
-                total_frames = len(frame_files)
-                
-                for line in process.stderr:
-                    frame_match = re.search(r'frame=\s*(\d+)', line)
-                    if frame_match and total_frames > 0:
-                        current_frame = int(frame_match.group(1))
-                        progress = min(100, (current_frame / total_frames) * 100)
-                        progress_callback(progress)
+            frame_files = list(Path(frames_dir).glob("frame_*.png"))
+            total_frames = len(frame_files)
+            
+            assert process.stderr is not None
+            for line in process.stderr:
+                frame_match = re.search(r'frame=\s*(\d+)', line)
+                if frame_match and total_frames > 0:
+                    current_frame = int(frame_match.group(1))
+                    progress = min(100, (current_frame / total_frames) * 100)
+                    progress_callback(progress)
             
             process.wait()
             
@@ -269,16 +291,11 @@ class FFmpegHandler:
             return False
         
         try:
-            cmd = [
-                self.ffmpeg_path,
-                "-i", video_path,
-                "-vn",
-                "-acodec", "copy",
-                "-y",
-                output_path
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True)
+            video_path = _clean_path(video_path)
+            output_path = _clean_path(output_path)
+
+            cmd = [self.ffmpeg_path, "-y", "-i", video_path, "-vn", "-acodec", "copy", output_path]
+            result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return result.returncode == 0
             
         except Exception as e:
