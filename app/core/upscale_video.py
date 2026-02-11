@@ -4,11 +4,10 @@ import os
 import shutil
 from pathlib import Path
 from typing import Optional, Callable
-from .upscale_image import ImageUpscaler
+from .upscale_image import ImageUpscaler, _clean_path
 from .ffmpeg_handler import FFmpegHandler
 
 logger = logging.getLogger(__name__)
-
 
 class VideoUpscaler:
     """동영상 업스케일러 (프레임 단위 처리)."""
@@ -58,10 +57,18 @@ class VideoUpscaler:
             return False
         
         try:
+            input_path = _clean_path(input_path)
+            output_path = _clean_path(output_path)
+
             logger.info(f"Upscaling video: {input_path}")
             
             # 작업 디렉토리 생성
-            work_dir = self.temp_dir / Path(input_path).stem
+            safe_name = Path(input_path).stem
+            safe_name = "".join(c for c in safe_name if c.isalnum() or c in ("_", "-"))
+            if not safe_name:
+                safe_name = "job"
+
+            work_dir = self.temp_dir / safe_name
             frames_in_dir = work_dir / "frames_in"
             frames_out_dir = work_dir / "frames_out"
             audio_file = work_dir / "audio.aac"
