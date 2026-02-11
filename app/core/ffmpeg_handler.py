@@ -142,7 +142,7 @@ class FFmpegHandler:
             video_path = _clean_path(video_path)
             output_dir = _clean_path(output_dir)
             Path(output_dir).mkdir(parents=True, exist_ok=True)
-            out_pattern = str(Path(output_dir) / "frame_%06d.png")
+            out_pattern = str(Path(output_dir) / "frame_%06d.jpg")
             
             cmd = [
                 self.ffmpeg_path, "-y",
@@ -154,7 +154,7 @@ class FFmpegHandler:
             
             cmd.extend([
                 "-i", video_path,
-                "-qscale:v", "1",
+                "-q:v", "3",
                 out_pattern
             ])
 
