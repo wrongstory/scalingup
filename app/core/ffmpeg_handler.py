@@ -229,7 +229,7 @@ class FFmpegHandler:
 
             # 코덱 설정
             codec_name = "libx264" if codec == "h264" else "libx265"
-            in_pattern = str(Path(frames_dir) / "frame_%06d.png")
+            in_pattern = str(Path(frames_dir) / "frame_%06d.jpg")
             
             cmd = [
                 self.ffmpeg_path,
@@ -266,7 +266,7 @@ class FFmpegHandler:
             )
             
             # 진행률 파싱
-            frame_files = list(Path(frames_dir).glob("frame_*.png"))
+            frame_files = list(Path(frames_dir).glob("frame_*.jpg"))
             total_frames = len(frame_files)
             
             assert process.stderr is not None
