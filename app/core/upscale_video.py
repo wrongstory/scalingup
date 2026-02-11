@@ -101,7 +101,7 @@ class VideoUpscaler:
             
             # 2. 프레임 업스케일
             logger.info("Step 2: Upscaling frames")
-            frame_files = sorted(frames_in_dir.glob("frame_*.png"))
+            frame_files = sorted(frames_in_dir.glob("frame_*.jpg"))
             total_frames = len(frame_files)
             
             if total_frames == 0:
