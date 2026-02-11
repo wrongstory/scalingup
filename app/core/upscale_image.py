@@ -122,6 +122,9 @@ class ImageUpscaler:
                 progress_callback(10)
             
             # 업스케일 수행
+            if self.upsampler is None:
+                raise RuntimeError("Upsampler not initialized")
+            
             try:
                 output, _ = self.upsampler.enhance(img, outscale=scale)
             except Exception as e:
@@ -196,6 +199,9 @@ class ImageUpscaler:
             
             if progress_callback:
                 progress_callback(10)
+            
+            if self.upsampler is None:
+                raise RuntimeError("Upsampler not initialized")
             
             # 업스케일
             output, _ = self.upsampler.enhance(img, outscale=scale)
