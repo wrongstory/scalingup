@@ -79,10 +79,9 @@ class Worker(QThread):
         self.all_tasks_completed.emit()
     
     def _process_task(self, task: UpscaleTask):
-        """현재 작업 id 저장"""
+        """현재 작업 id 저장 후 작업 처리"""
         self.current_task_id = task.task_id
 
-        """작업 처리."""
         logger.info(f"Processing task: {task.task_id}")
         
         # 작업 시작
