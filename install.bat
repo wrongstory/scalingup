@@ -123,8 +123,21 @@ call venv\Scripts\activate.bat
 REM Upgrade pip
 python -m pip install --upgrade pip setuptools wheel --quiet
 
-echo Installing packages from requirements.txt...
-pip install -r requirements.txt
+echo Detecting GPU...
+nvidia-smi >nul 2>&1
+if not errorlevel 1 (
+    echo.
+    echo NVIDIA GPU detected!
+    nvidia-smi --query-gpu=name --format=csv,noheader
+    echo Installing GPU version...
+    echo.
+    pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118 --quiet
+    pip install -r requirements_gpu.txt --quiet
+) else (
+    echo No NVIDIA GPU detected. Installing CPU version...
+    echo.
+    pip install -r requirements.txt -- quiet
+)
 
 if errorlevel 1 (
     echo.
