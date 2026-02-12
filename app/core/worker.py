@@ -79,7 +79,9 @@ class Worker(QThread):
         self.all_tasks_completed.emit()
     
     def _process_task(self, task: UpscaleTask):
-        """작업 처리."""
+        """현재 작업 id 저장 후 작업 처리"""
+        self.current_task_id = task.task_id
+
         logger.info(f"Processing task: {task.task_id}")
         
         # 작업 시작
@@ -133,6 +135,9 @@ class Worker(QThread):
                 error=str(e)
             )
             self.task_failed.emit(task.task_id, str(e))
+
+        finally:
+            self.current_task_id = None
     
     def _load_model(self, model_name: str) -> bool:
         """AI 모델 로드."""
@@ -171,9 +176,13 @@ class Worker(QThread):
     def _process_image_task(self, task: UpscaleTask) -> bool:
         """이미지 작업 처리."""
         
+        if not self.image_upscaler:
+            logger.error("Image upscaler not initialized")
+            return False
+        
         def progress_callback(progress):
             # 취소 확인
-            if task.status == TaskStatus.CANCELLED:
+            if self._stop_requested or task.status == TaskStatus.CANCELLED:
                 raise InterruptedError("Task cancelled")
             
             self.task_queue.update_task(
@@ -196,6 +205,10 @@ class Worker(QThread):
     
     def _process_video_task(self, task: UpscaleTask) -> bool:
         """동영상 작업 처리."""
+        
+        if not self.video_upscaler:
+            logger.error("Video upscaler not initialized")
+            return False
         
         def progress_callback(message, progress):
             # 취소 확인
@@ -240,4 +253,13 @@ class Worker(QThread):
     def stop(self):
         """워커 중지."""
         self._stop_requested = True
+
+        # 현재 작업도 취소 상태로 변경 (progress_callback 에서 즉시 감지)
+        current_task_id = getattr(self, "current_task_id", None)
+        if current_task_id:
+            self.task_queue.update_task(
+                current_task_id,
+                status=TaskStatus.CANCELLED,
+                message="사용자에 의해 중지됨"
+            )
         logger.info("Worker stop requested")
