@@ -16,12 +16,14 @@ class VideoUpscaler:
         self,
         image_upscaler: ImageUpscaler,
         ffmpeg_handler: FFmpegHandler,
-        temp_dir: str = "temp"
+        temp_dir: str = "temp",
+        should_stop: Optional[Callable[[], bool]] = None
     ):
         self.image_upscaler = image_upscaler
         self.ffmpeg = ffmpeg_handler
         self.temp_dir = Path(temp_dir)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self.should_stop = should_stop
     
     def upscale_video(
         self,
@@ -109,6 +111,11 @@ class VideoUpscaler:
                 return False
             
             for idx, frame_file in enumerate(frame_files):
+                # 중간 정지 추가
+                if self.should_stop and self.should_stop():
+                    logger.info("Video upscale cancelled by user")
+                    return False
+                
                 output_frame = frames_out_dir / frame_file.name
                 
                 # 진행률 업데이트
