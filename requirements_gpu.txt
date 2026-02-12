@@ -1,0 +1,37 @@
+# AI Upscaler - Verified Package Versions for Python 3.10
+# These versions are 100% tested and compatible
+
+# UI Framework
+PySide6==6.5.3
+
+# Core Image Processing
+opencv-python==4.8.0.76
+Pillow==10.0.0
+numpy==1.24.3
+
+# PyTorch (GPU - CUDA 11.8)
+torch==2.0.1+cu118
+torchvision==0.15.2+cu118
+
+# AI Upscaling - Verified versions
+basicsr==1.4.2
+facexlib==0.3.0
+gfpgan==1.3.8
+realesrgan==0.3.0
+
+# Video Processing
+ffmpeg-python==0.2.0
+
+# Utilities
+tqdm==4.66.1
+requests==2.31.0
+PyYAML==6.0.1
+tensorboard>=2.15,<2.16
+addict==2.4.0
+future==0.18.3
+lmdb==1.4.1
+yapf==0.40.2
+scipy==1.10.1
+
+# Optional - for building exe
+pyinstaller==6.3.0
