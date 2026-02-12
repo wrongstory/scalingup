@@ -177,6 +177,10 @@ class Worker(QThread):
     def _process_image_task(self, task: UpscaleTask) -> bool:
         """이미지 작업 처리."""
         
+        if not self.image_upscaler:
+            logger.error("Image upscaler not initialized")
+            return False
+        
         def progress_callback(progress):
             # 취소 확인
             if self._stop_requested or task.status == TaskStatus.CANCELLED:
@@ -202,6 +206,10 @@ class Worker(QThread):
     
     def _process_video_task(self, task: UpscaleTask) -> bool:
         """동영상 작업 처리."""
+        
+        if not self.video_upscaler:
+            logger.error("Video upscaler not initialized")
+            return False
         
         def progress_callback(message, progress):
             # 취소 확인
@@ -248,9 +256,10 @@ class Worker(QThread):
         self._stop_requested = True
 
         # 현재 작업도 취소 상태로 변경 (progress_callback 에서 즉시 감지)
-        if getattr(self, "current_task_id", None):
+        current_task_id = getattr(self, "current_task_id", None)
+        if current_task_id:
             self.task_queue.update_task(
-                self.current_task_id,
+                current_task_id,
                 status=TaskStatus.CANCELLED,
                 message="사용자에 의해 중지됨"
             )
