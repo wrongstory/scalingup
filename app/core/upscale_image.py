@@ -69,6 +69,19 @@ class ImageUpscaler:
             if 'anime' in self.model_name:
                 model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
                 netscale = 4
+            elif 'SwinIR' in self.model_name:
+                from basicsr.archs.swinir_arch import SwinIR
+                model = SwinIR(
+                    upscale=4, in_chans=3, img_size=64, window_size=8,
+                    img_range=1., depths=[6, 6, 6, 6, 6, 6, 6, 6, 6],
+                    embed_dim=240, num_heads=[8, 8, 8, 8, 8, 8, 8, 8, 8],
+                    mlp_ratio=2, upsampler='nearest+conv', resi_connection='3conv'
+                )
+                netscale = 4
+            elif 'HAT' in self.model_name:
+                from basicsr.archs.rrdbnet_arch import RRDBNet
+                model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+                netscale = 4
             else:
                 model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
                 netscale = 4
