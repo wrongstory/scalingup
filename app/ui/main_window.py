@@ -1,6 +1,5 @@
 """Main window for AI Upscaler application."""
 import logging
-import uuid
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
@@ -9,7 +8,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QFileDialog, QMessageBox, QSplitter, QTabWidget, QLabel,
     QProgressBar, QTextEdit, QGroupBox, QSpinBox,
-    QComboBox, QCheckBox, QLineEdit, QListWidget, QListWidgetItem
+    QComboBox, QCheckBox, QLineEdit, QListWidget, QListWidgetItem,
+    QAbstractItemView
 )
 from PySide6.QtWidgets import QMessageBox as QMB
 
@@ -121,8 +121,8 @@ class MainWindow(QMainWindow):
         # 드래그&드롭 가능한 리스트 위젯
         self.file_list = FileListWidget()
         self.file_list.setAcceptDrops(True)
-        self.file_list.setDragEnabled(False)  # "드롭으로 추가"가 목적이므로 False가 안전
-        self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+        self.file_list.setDragEnabled(False)  # "드롭으로 추가" 목적이면 False가 안전
+        self.file_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.file_list.files_dropped.connect(self.add_files_from_drop)
         layout.addWidget(self.file_list)
 
@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         model_layout = QVBoxLayout()
         self.model_combo = QComboBox()
 
-        # ✅ (중요) 누락된 콤마 때문에 문자열 합쳐지는 버그 수정
+        # (중요) 콤마 누락 버그 수정됨
         self.model_combo.addItems([
             "RealESRGAN_x2plus (2배속)",
             "RealESRGAN_x4plus (일반)",
@@ -392,7 +392,7 @@ class MainWindow(QMainWindow):
             self.add_log(f"스킵({via}): 지원하지 않는 형식 - {Path(file_path).name}")
             return
 
-        # ✅ 중복 방지
+        # 중복 방지
         for i in range(self.file_list.count()):
             if self.file_list.item(i).text() == file_path:
                 self.add_log(f"스킵({via}): 이미 추가됨 - {Path(file_path).name}")
@@ -479,7 +479,7 @@ class MainWindow(QMainWindow):
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        # ✅ 재시작 시 이전 작업이 누적되지 않도록 큐 리셋
+        # 재시작 시 이전 작업 누적 방지
         self.task_queue = TaskQueue()
 
         self.create_tasks()
@@ -498,9 +498,8 @@ class MainWindow(QMainWindow):
         scale = self.scale_spin.value()
 
         model_text = self.model_combo.currentText()
-
-        # ✅ 모델 이름 매핑(표시 텍스트 기반)
         lower = model_text.lower()
+
         if "anime" in lower:
             model_name = "RealESRGAN_x4plus_anime_6B"
         elif "realesrnet" in lower:
@@ -530,9 +529,8 @@ class MainWindow(QMainWindow):
 
             task_type = TaskType.IMAGE if is_image(file_path) else TaskType.VIDEO
 
-            # ✅ task_id 빈값이면 이벤트/조회 매칭 깨질 확률 높음 → uuid 사용
             task = UpscaleTask(
-                task_id=str(uuid.uuid4()),
+                task_id="",  # ✅ TaskQueue.add_task가 자동으로 task_0001 형태로 채움
                 task_type=task_type,
                 input_path=file_path,
                 output_path=output_path,
@@ -545,14 +543,16 @@ class MainWindow(QMainWindow):
                 preserve_audio=self.preserve_audio_checkbox.isChecked(),
             )
 
-            self.task_queue.add_task(task)
+            assigned_id = self.task_queue.add_task(task)
+            # 필요하면 로그 남기기
+            # self.add_log(f"큐 추가됨: {assigned_id}")
 
     def start_worker(self):
         """Worker 시작."""
         device = get_device(self.gpu_checkbox.isChecked())
         tile_size = int(self.tile_combo.currentText())
 
-        # ✅ 기존 worker가 살아있으면 정리(안전)
+        # 기존 worker가 살아있으면 정리(안전)
         if self.worker and self.worker.isRunning():
             self.worker.stop()
             self.worker.wait()
@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
             self.status_label.setText(f"처리 중: {filename}")
 
     def on_task_progress(self, task_id: str, message: str, progress: float):
-        # ✅ progress가 0~1로 올 수도, 0~100으로 올 수도 있어서 안전 처리
+        # progress가 0~1로 올 수도, 0~100으로 올 수도 있어서 안전 처리
         if progress <= 1.0:
             progress = progress * 100.0
         self.progress_bar.setValue(max(0, min(100, int(progress))))
