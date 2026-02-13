@@ -469,7 +469,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
-        self.add_log("=" * 50)
+        self.add_log("=" * 50)d
         self.add_log("작업 시작")
         self.add_log("=" * 50)
     
@@ -482,8 +482,18 @@ class MainWindow(QMainWindow):
         model_text = self.model_combo.currentText()
         if "anime" in model_text.lower():
             model_name = "RealESRGAN_x4plus_anime_6B"
+        elif "RealESRNet" in model_text:
+            model_name = "RealESRNet_x4plus"
+        elif "2배속" in model_text:
+            model_name = "RealESRGAN_x2plus"
+        elif "SwinIR" in model_text:
+            model_name = "SwinIR_x4"
+        elif "sharper" in model_text:
+            model_name = "Real_HAT_GAN_SRx4_sharper"
+        elif "HAT" in model_text:
+            model_name = "Real_HAT_GAN_SRx4"
         else:
-            model_name = "RealESRGAN_x4plus"
+            model_name = "RealESRGAN_x4plus"    
         
         # 코덱
         codec = "h264" if "H.264" in self.codec_combo.currentText() else "h265"
