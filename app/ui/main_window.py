@@ -6,8 +6,10 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QFileDialog, QMessageBox, QSplitter, QTabWidget, QLabel,
     QProgressBar, QTextEdit, QGroupBox, QSpinBox, QDoubleSpinBox,
-    QComboBox, QCheckBox, QLineEdit, QListWidget, QListWidgetItem
+    QComboBox, QCheckBox, QLineEdit, QListWidget, QListWidgetItem,
+    QAbstractItemView
 )
+from PySide6.QtWidgets import QMessageBox as QMB
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QDragEnterEvent, QDropEvent
 
@@ -64,7 +66,7 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout(central_widget)
         
         # Splitter로 구성
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # 왼쪽: 파일 목록
         left_panel = self.create_file_list_panel()
@@ -171,8 +173,13 @@ class MainWindow(QMainWindow):
         model_layout = QVBoxLayout()
         self.model_combo = QComboBox()
         self.model_combo.addItems([
+            "RealESRGAN_x2plus (2배속)",
             "RealESRGAN_x4plus (일반)",
-            "RealESRGAN_x4plus_anime_6B (애니메이션)"
+            "RealESRNet_x4plus (노이즈 제거)"
+            "RealESRGAN_x4plus_anime_6B (애니메이션)",
+            "SwinIR_x4 (고품질 사진)",
+            "Real_HAT_GAN_SRx4 (HAT 기본)",
+            "Real_HAT_GAN_SRx4_sharper (HAT 선명)",
         ])
         model_layout.addWidget(self.model_combo)
         model_group.setLayout(model_layout)
@@ -628,10 +635,10 @@ class MainWindow(QMainWindow):
                 self,
                 "확인",
                 "작업이 진행 중입니다. 종료하시겠습니까?",
-                QMessageBox.Yes | QMessageBox.No
+                QMB.StandardButton.Yes | QMB.StandardButton.No
             )
             
-            if reply == QMessageBox.Yes:
+            if reply == QMB.StandardButton.Yes:
                 self.worker.stop()
                 self.worker.wait()
                 event.accept()
