@@ -5,7 +5,29 @@ from pathlib import Path
 from typing import Optional, Callable
 import cv2
 from PIL import Image
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
+class SwinIRWrapper(nn.Module):
+    """SwinIR 타일 크기 호환성 래퍼 (window_size 배수 보장)."""
+    def __init__(self, model, window_size=8, scale=4):
+        super().__init__()
+        self.model = model
+        self.window_size = window_size
+        self.scale = scale
+
+    def forward(self, x):
+        _, _, h, w = x.size()
+        # window_size 배수로 패딩
+        pad_h = (self.window_size - h % self.window_size) % self.window_size
+        pad_w = (self.window_size - w % self.window_size) % self.window_size
+        x = F.pad(x, (0, pad_w, 0, pad_h), 'reflect')
+        # 업스케일
+        out = self.model(x)
+        # 원래 크기로 크롭
+        return out[:, :, :h * self.scale, :w * self.scale]
+    
 logger = logging.getLogger(__name__)
 
 def _clean_path(p: str) -> str:
@@ -71,12 +93,13 @@ class ImageUpscaler:
                 netscale = 4
             elif 'SwinIR' in self.model_name:
                 from basicsr.archs.swinir_arch import SwinIR
-                model = SwinIR(
+                base_model = SwinIR(
                     upscale=4, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6, 6, 6, 6, 6, 6],
                     embed_dim=240, num_heads=[8, 8, 8, 8, 8, 8, 8, 8, 8],
                     mlp_ratio=2, upsampler='nearest+conv', resi_connection='3conv'
                 )
+                model = SwinIRWrapper(base_model, window_size=8, scale=4)
                 netscale = 4
             elif 'HAT' in self.model_name:
                 from basicsr.archs.rrdbnet_arch import RRDBNet
