@@ -469,7 +469,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
-        self.add_log("=" * 50)d
+        self.add_log("=" * 50)
         self.add_log("작업 시작")
         self.add_log("=" * 50)
     
