@@ -10,10 +10,16 @@ logger = logging.getLogger(__name__)
 
 # 모델 다운로드 URL
 MODEL_URLS = {
+    # Real-ESRGAN
     "RealESRGAN_x4plus": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
     "RealESRGAN_x4plus_anime_6B": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
     "RealESRNet_x4plus": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/RealESRNet_x4plus.pth",
     "RealESRGAN_x2plus": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
+    # SwinIR
+    "SwinIR_x4": None,  # 수동 다운로드 필요
+    # Real-HAT
+    "Real_HAT_GAN_SRx4_sharper": None,
+    "Real_HAT_GAN_SRx4": "https://huggingface.co/jaideepsingh/upscale_models/resolve/main/HAT/Real_HAT_GAN_SRx4.pth",
 }
 
 
@@ -33,6 +39,9 @@ class ModelManager:
         
         # 모델 다운로드
         if model_name in MODEL_URLS:
+            if MODEL_URLS[model_name] is None:
+                logger.error(f"Model requires manual download: {model_name}")
+                return None
             logger.info(f"Downloading model: {model_name}")
             if self.download_model(model_name):
                 return model_file
